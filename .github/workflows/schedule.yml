@@ -1,0 +1,108 @@
+name: YomnaBot 🤖
+
+on:
+  schedule:
+    # ⚠️ GitHub Actions بيشتغل بتوقيت UTC
+    # القاهرة = UTC + 2 (أو +3 في التوقيت الصيفي)
+    # هنا بنستخدم +2 (التوقيت الشتوي)
+
+    # 📖 PDF + MP3 — كل يوم الساعة 5:30 ص بتوقيت القاهرة = 3:30 UTC
+    - cron: '30 3 * * *'
+
+    # 🌅 أذكار الصباح — كل يوم 6:00 ص القاهرة = 4:00 UTC
+    - cron: '0 4 * * *'
+
+    # 🌆 أذكار المساء — كل يوم 4:30 م القاهرة = 14:30 UTC
+    - cron: '30 14 * * *'
+
+    # 📖 سورة الكهف — كل يوم 10:30 ص القاهرة = 8:30 UTC
+    #    (الكود نفسه بيتحقق لو النهارده جمعة)
+    - cron: '30 8 * * *'
+
+  # تشغيل يدوي من GitHub عند الحاجة
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'المهمة المطلوبة'
+        required: true
+        default: 'daily_files'
+        type: choice
+        options:
+          - daily_files
+          - sabah
+          - masa
+          - kahf
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    # صلاحية الكتابة عشان نعمل commit لـ state.json
+    permissions:
+      contents: write
+
+    steps:
+      # ① تحميل الكود من الريبو
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ② تثبيت Python
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ③ تثبيت المكتبات
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      # ④ تحديد المهمة حسب الوقت (أو من الـ input اليدوي)
+      - name: 🎯 Determine task
+        id: task
+        run: |
+          # لو تشغيل يدوي، استخدم الـ input
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.task }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # احسب الوقت الحالي بالدقائق من منتصف الليل UTC
+          HOUR=$(date -u +%H)
+          MIN=$(date -u +%M)
+          TIME_MINS=$((HOUR * 60 + MIN))
+
+          # 3:30 UTC = 210 دقيقة
+          # 4:00 UTC = 240 دقيقة
+          # 8:30 UTC = 510 دقيقة
+          # 14:30 UTC = 870 دقيقة
+
+          if [ $TIME_MINS -ge 205 ] && [ $TIME_MINS -lt 235 ]; then
+            echo "name=daily_files" >> $GITHUB_OUTPUT
+          elif [ $TIME_MINS -ge 235 ] && [ $TIME_MINS -lt 505 ]; then
+            echo "name=sabah" >> $GITHUB_OUTPUT
+          elif [ $TIME_MINS -ge 505 ] && [ $TIME_MINS -lt 865 ]; then
+            echo "name=kahf" >> $GITHUB_OUTPUT
+          else
+            echo "name=masa" >> $GITHUB_OUTPUT
+          fi
+
+      # ⑤ تشغيل البوت
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          TOPIC_ID: ${{ secrets.TOPIC_ID }}
+          RELEASE_BASE: ${{ secrets.RELEASE_BASE }}
+        run: python bot.py ${{ steps.task.outputs.name }}
+
+      # ⑥ حفظ state.json في الريبو (بعد مهمة daily_files بس)
+      - name: 💾 Save progress
+        if: steps.task.outputs.name == 'daily_files'
+        run: |
+          git config user.name  "YomnaBot"
+          git config user.email "yomnabot@github.com"
+          git add state.json
+          git diff --staged --quiet || git commit -m "📊 تحديث التقدم: $(cat state.json)"
+          git push
