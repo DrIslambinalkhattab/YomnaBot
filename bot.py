@@ -51,18 +51,28 @@ def send_text(text: str):
     print(f"📨 نص: {r.status_code} | {r.json().get('description','OK')}")
 
 def send_document_url(url: str, caption: str = ""):
-    r = requests.post(
+    print(f"⬇️  تحميل PDF...")
+    r = requests.get(url, allow_redirects=True)
+    filename = url.split("/")[-1]
+    files = {"document": (filename, r.content, "application/pdf")}
+    r2 = requests.post(
         f"{BASE_URL}/sendDocument",
-        data={**_base_params(), "document": url, "caption": caption, "parse_mode": "HTML"},
+        data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
+        files=files,
     )
-    print(f"📄 PDF: {r.status_code} | {r.json().get('description','OK')}")
+    print(f"📄 PDF: {r2.status_code} | {r2.json().get('description','OK')}")
 
 def send_audio_url(url: str, caption: str = ""):
-    r = requests.post(
+    print(f"⬇️  تحميل MP3...")
+    r = requests.get(url, allow_redirects=True)
+    filename = url.split("/")[-1]
+    files = {"audio": (filename, r.content, "audio/mpeg")}
+    r2 = requests.post(
         f"{BASE_URL}/sendAudio",
-        data={**_base_params(), "audio": url, "caption": caption, "parse_mode": "HTML"},
+        data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
+        files=files,
     )
-    print(f"🎵 MP3: {r.status_code} | {r.json().get('description','OK')}")
+    print(f"🎵 MP3: {r2.status_code} | {r2.json().get('description','OK')}")
 
 def send_photo_file(path: str, caption: str = ""):
     with open(path, "rb") as photo:
