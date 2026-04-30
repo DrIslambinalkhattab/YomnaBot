@@ -111,8 +111,8 @@ def task_daily_files():
         f"🤲 اللهم اجعله في ميزان حسناتنا"
     )
 
-    pdf_url = f"{RELEASE_BASE}/PdfQuran/{num}.pdf"
-    mp3_url = f"{RELEASE_BASE_MP3}/Mp3Quran/{num}.mp3"
+    pdf_url = f"{RELEASE_BASE}/{num}.pdf"
+    mp3_url = f"{RELEASE_BASE_MP3}/{num}.mp3"
 
     print(f"📤 إرسال الملف رقم {num} ({pct}%)")
     send_document_url(pdf_url, caption)
