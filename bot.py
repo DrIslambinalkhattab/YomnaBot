@@ -1,6 +1,5 @@
 """
 YomnaBot — يشتغل مرة واحدة عن طريق GitHub Actions
-كل شغلة بتعمل المهمة المطلوبة وبتحفظ التقدم في state.json
 """
 
 import os
@@ -13,15 +12,16 @@ import pytz
 # ─────────────────────────────────────────────
 #  الإعدادات
 # ─────────────────────────────────────────────
-BOT_TOKEN    = os.environ["BOT_TOKEN"]
-CHAT_ID      = os.environ.get("CHAT_ID", "-1003844022713")
-TOPIC_ID     = os.environ.get("TOPIC_ID", "33")
-RELEASE_BASE     = os.environ.get("RELEASE_BASE", "")
-RELEASE_BASE_MP3 = os.environ.get("RELEASE_BASE_MP3", RELEASE_BASE)
-CAIRO_TZ     = pytz.timezone("Africa/Cairo")
-TOTAL_FILES  = 604
-STATE_FILE   = "state.json"
-BASE_URL     = f"https://api.telegram.org/bot{BOT_TOKEN}"
+BOT_TOKEN        = os.environ["BOT_TOKEN"]
+CHAT_ID          = os.environ.get("CHAT_ID", "-1003844022713")
+TOPIC_ID         = os.environ.get("TOPIC_ID", "33")
+RELEASE_BASE     = os.environ.get("RELEASE_BASE", "")      # v1.1 — PDF
+RELEASE_BASE_MP3 = os.environ.get("RELEASE_BASE_MP3", "")  # v1.0 — MP3
+RELEASE_KAHF     = os.environ.get("RELEASE_KAHF", "")      # v1.2 — الكهف
+CAIRO_TZ         = pytz.timezone("Africa/Cairo")
+TOTAL_FILES      = 604
+STATE_FILE       = "state.json"
+BASE_URL         = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 # ─────────────────────────────────────────────
 #  State
@@ -48,31 +48,25 @@ def send_text(text: str):
         f"{BASE_URL}/sendMessage",
         data={**_base_params(), "text": text, "parse_mode": "HTML"},
     )
-    print(f"📨 نص: {r.status_code} | {r.json().get('description','OK')}")
+    print(f"📨 نص: {r.status_code}")
 
-def send_document_url(url: str, caption: str = ""):
-    print(f"⬇️  تحميل PDF...")
-    r = requests.get(url, allow_redirects=True)
-    filename = url.split("/")[-1]
-    files = {"document": (filename, r.content, "application/pdf")}
-    r2 = requests.post(
+def send_document_bytes(data: bytes, filename: str, caption: str = ""):
+    files = {"document": (filename, data, "application/pdf")}
+    r = requests.post(
         f"{BASE_URL}/sendDocument",
         data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
         files=files,
     )
-    print(f"📄 PDF: {r2.status_code} | {r2.json().get('description','OK')}")
+    print(f"📄 PDF: {r.status_code} | {r.json().get('description','OK')}")
 
-def send_audio_url(url: str, caption: str = ""):
-    print(f"⬇️  تحميل MP3...")
-    r = requests.get(url, allow_redirects=True)
-    filename = url.split("/")[-1]
-    files = {"audio": (filename, r.content, "audio/mpeg")}
-    r2 = requests.post(
+def send_audio_bytes(data: bytes, filename: str, caption: str = ""):
+    files = {"audio": (filename, data, "audio/mpeg")}
+    r = requests.post(
         f"{BASE_URL}/sendAudio",
         data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
         files=files,
     )
-    print(f"🎵 MP3: {r2.status_code} | {r2.json().get('description','OK')}")
+    print(f"🎵 MP3: {r.status_code} | {r.json().get('description','OK')}")
 
 def send_photo_file(path: str, caption: str = ""):
     with open(path, "rb") as photo:
@@ -81,73 +75,159 @@ def send_photo_file(path: str, caption: str = ""):
             data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
             files={"photo": photo},
         )
-    print(f"🖼️ صورة: {r.status_code} | {r.json().get('description','OK')}")
+    print(f"🖼️ صورة: {r.status_code}")
+
+def download(url: str) -> bytes:
+    print(f"⬇️  جاري التحميل...")
+    r = requests.get(url, allow_redirects=True)
+    print(f"   ✅ {len(r.content) // 1024} KB")
+    return r.content
 
 # ─────────────────────────────────────────────
-#  Progress bar
+#  Progress bar — مزخرف
 # ─────────────────────────────────────────────
-def progress_bar(current: int, total: int, length: int = 10) -> str:
-    filled = int((current / total) * length)
-    return "🟩" * filled + "⬜" * (length - filled)
+def progress_bar(current: int, total: int) -> str:
+    length   = 10
+    filled   = int((current / total) * length)
+    empty    = length - filled
+    pct      = round((current / total) * 100, 1)
+
+    # اخترنا رموز تليق بالمقام
+    bar = "🟩" * filled + "⬜" * empty
+
+    remaining = total - current
+    return (
+        f"<b>[{bar}]</b>  <b>{pct}%</b>\n"
+        f"📂 الملف: <b>{current}</b> من <b>{total}</b>  |  "
+        f"⏳ متبقي: <b>{remaining}</b> ملف"
+    )
 
 # ─────────────────────────────────────────────
-#  المهام
+#  رسائل التحفيز حسب التقدم
+# ─────────────────────────────────────────────
+def motivational(pct: float) -> str:
+    if pct < 10:
+        return "🌱 <i>البداية نور — بارك الله في خطواتكم</i>"
+    elif pct < 25:
+        return "🌿 <i>ماشيين بثبات — الله يكتب لكم الأجر</i>"
+    elif pct < 50:
+        return "🌸 <i>في منتصف الطريق — ولا تهنوا ولا تحزنوا</i>"
+    elif pct < 75:
+        return "🌺 <i>أكثر من النص — الله يتمم علينا بخير</i>"
+    elif pct < 90:
+        return "🌟 <i>قاربنا — اللهم بلّغنا الختم</i>"
+    else:
+        return "✨ <i>على وشك الختمة — اللهم تقبّل منا ومنكم</i>"
+
+# ─────────────────────────────────────────────
+#  المهمة الأولى: PDF + MP3 كل يوم 5:30 ص
 # ─────────────────────────────────────────────
 def task_daily_files():
-    """5:30 ص — PDF + MP3"""
     state = load_state()
     n     = state["current_file"]
     num   = f"{n:03d}"
+    pct   = round((n / TOTAL_FILES) * 100, 1)
+    bar   = progress_bar(n, TOTAL_FILES)
+    motiv = motivational(pct)
 
-    pct = round((n / TOTAL_FILES) * 100, 1)
-    bar = progress_bar(n, TOTAL_FILES)
+    now_cairo = datetime.now(CAIRO_TZ)
+    date_str  = now_cairo.strftime("%d / %m / %Y")
 
-    caption = (
+    caption_pdf = (
         f"📖 <b>ختمة القرآن الكريم</b>\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"📂 الملف: <b>{num}</b> من <b>{TOTAL_FILES}</b>\n"
-        f"[{bar}] {pct}%\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"🤲 اللهم اجعله في ميزان حسناتنا"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"🗓 <i>{date_str}</i>\n\n"
+        f"{bar}\n\n"
+        f"{motiv}\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"🤲 <i>اللهم اجعله في ميزان حسناتنا</i>"
+    )
+
+    caption_mp3 = (
+        f"🎧 <b>استماع | الجزء {num}</b>\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"<i>«وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا»</i>"
     )
 
     pdf_url = f"{RELEASE_BASE}/{num}.pdf"
     mp3_url = f"{RELEASE_BASE_MP3}/{num}.mp3"
 
     print(f"📤 إرسال الملف رقم {num} ({pct}%)")
-    send_document_url(pdf_url, caption)
-    send_audio_url(mp3_url, f"🎵 استماع | الملف {num}")
+    send_document_bytes(download(pdf_url), f"{num}.pdf", caption_pdf)
+    send_audio_bytes(download(mp3_url), f"{num}.mp3", caption_mp3)
 
     state["current_file"] = (n % TOTAL_FILES) + 1
     save_state(state)
 
 
+# ─────────────────────────────────────────────
+#  المهمة الثانية أ: أذكار الصباح
+# ─────────────────────────────────────────────
 def task_sabah():
-    """6:00 ص — أذكار الصباح"""
     print("🌅 إرسال أذكار الصباح")
-    send_photo_file(
-        "Zeikr/sabah.jpg",
-        "🌅 <b>أذكار الصباح</b>\nصباح الخير والبركات 🤍",
+    caption = (
+        f"🌅 <b>أذكار الصباح</b>\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"<i>«يُسَبِّحُ لِلَّهِ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ»</i>\n\n"
+        f"🤍 <b>أحسن ما تبدأ به يومك</b>\n"
+        f"<i>حافظ عليها تُكتب من الذاكرين</i>"
     )
+    send_photo_file("Zeikr/sabah.jpg", caption)
 
 
+# ─────────────────────────────────────────────
+#  المهمة الثانية ب: أذكار المساء
+# ─────────────────────────────────────────────
 def task_masa():
-    """4:30 م — أذكار المساء"""
     print("🌆 إرسال أذكار المساء")
-    send_photo_file(
-        "Zeikr/masa.jpg",
-        "🌆 <b>أذكار المساء</b>\nمساء النور والسعادة 🤍",
+    caption = (
+        f"🌆 <b>أذكار المساء</b>\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"<i>«وَسَبِّحْ بِحَمْدِ رَبِّكَ قَبْلَ غُرُوبِ الشَّمْسِ»</i>\n\n"
+        f"🤍 <b>اختم يومك بذكر الله</b>\n"
+        f"<i>حافظ عليها تُكتب من الذاكرين</i>"
     )
+    send_photo_file("Zeikr/masa.jpg", caption)
 
 
+# ─────────────────────────────────────────────
+#  المهمة الثالثة: الجمعة — سورة الكهف
+# ─────────────────────────────────────────────
 def task_friday_kahf():
-    """الجمعة 10:30 ص — سورة الكهف"""
-    print("📖 إرسال رسالة سورة الكهف")
-    send_text(
-        "📖 <b>لا تنس الكهف</b> 🌟\n\n"
-        "https://www.slideshare.net/slideshow/ss-75952543/75952543\n\n"
-        "تقبّل الله منا ومنكم ✨"
+    print("📖 إرسال سورة الكهف")
+
+    # رسالة تمهيدية أولاً
+    intro = (
+        f"🕌 <b>يوم الجمعة المبارك</b>\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n\n"
+        f"📖 <b>لا تنسَ سورة الكهف</b>\n\n"
+        f"<i>«مَنْ قَرَأَ سُورَةَ الْكَهْفِ فِي يَوْمِ الْجُمُعَةِ،</i>\n"
+        f"<i>أَضَاءَ لَهُ مِنَ النُّورِ مَا بَيْنَ الْجُمُعَتَيْنِ»</i>\n\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"🤲 <i>تقبّل الله منا ومنكم</i> ✨"
     )
+    send_text(intro)
+
+    # PDF سورة الكهف
+    caption_pdf = (
+        f"📗 <b>سورة الكهف</b>\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"<i>اقرأ واحتسب الأجر عند الله</i>"
+    )
+
+    # MP3 سورة الكهف
+    caption_mp3 = (
+        f"🎧 <b>استماع | سورة الكهف</b>\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"<i>«وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا»</i>"
+    )
+
+    pdf_url = f"{RELEASE_KAHF}/Al-Kahf.pdf"
+    mp3_url = f"{RELEASE_KAHF}/Al-Kahf.mp3"
+
+    send_document_bytes(download(pdf_url), "Al-Kahf.pdf", caption_pdf)
+    send_audio_bytes(download(mp3_url), "Al-Kahf.mp3", caption_mp3)
+
 
 # ─────────────────────────────────────────────
 #  نقطة الدخول
