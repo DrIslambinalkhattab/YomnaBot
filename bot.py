@@ -79,9 +79,13 @@ def send_photo_file(path: str, caption: str = ""):
     print(f"🖼️ صورة: {r.status_code}")
 
 def download(url: str) -> bytes:
-    print(f"⬇️  جاري التحميل...")
-    r = requests.get(url, allow_redirects=True)
-    print(f"   ✅ {len(r.content) // 1024} KB")
+    print(f"⬇️  جاري التحميل: {url}")
+    headers = {
+        "Accept": "application/octet-stream",
+        "User-Agent": "Mozilla/5.0",
+    }
+    r = requests.get(url, headers=headers, allow_redirects=True)
+    print(f"   ✅ {len(r.content) // 1024} KB | status: {r.status_code} | type: {r.headers.get('content-type','?')}")
     return r.content
 
 # ─────────────────────────────────────────────
