@@ -230,8 +230,8 @@ def task_friday_kahf():
     pdf_url = f"{RELEASE_KAHF}/Al-Kahf.pdf"
     mp3_url = f"{RELEASE_KAHF}/Al-Kahf.mp3"
 
-    send_document_bytes(download(pdf_url), "Al-Kahf.pdf", caption_pdf)
-    send_audio_bytes(download(mp3_url), "Al-Kahf.mp3", caption_mp3)
+    send_document_bytes(download(pdf_url), "al-kahf.pdf", caption_pdf)
+    send_audio_bytes(download(mp3_url), "al-kahf.mp3", caption_mp3)
 
 
 # ─────────────────────────────────────────────
