@@ -2,10 +2,10 @@ name: YomnaBot 🤖
 
 on:
   schedule:
-    - cron: '30 3 * * *'   # 📖 PDF + MP3    — 5:30 ص القاهرة
-    - cron: '0 4 * * *'    # 🌅 أذكار الصباح — 6:00 ص القاهرة
-    - cron: '30 14 * * *'  # 🌆 أذكار المساء — 4:30 م القاهرة
-    - cron: '30 8 * * 5'   # 📖 سورة الكهف  — جمعة 10:30 ص القاهرة
+    - cron: '30 2 * * *'   # 📖 PDF + MP3    — 5:30 ص القاهرة
+    - cron: '0 3 * * *'    # 🌅 أذكار الصباح — 6:00 ص القاهرة
+    - cron: '30 13 * * *'  # 🌆 أذكار المساء — 4:30 م القاهرة
+    - cron: '30 7 * * 5'   # 📖 سورة الكهف  — جمعة 10:30 ص القاهرة
 
   workflow_dispatch:
     inputs:
@@ -27,7 +27,7 @@ jobs:
   # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'daily_files') ||
-      (github.event_name == 'schedule' && github.event.schedule == '30 3 * * *')
+      (github.event_name == 'schedule' && github.event.schedule == '30 2 * * *')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -60,7 +60,7 @@ jobs:
   # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'sabah') ||
-      (github.event_name == 'schedule' && github.event.schedule == '0 4 * * *')
+      (github.event_name == 'schedule' && github.event.schedule == '0 3 * * *')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +80,7 @@ jobs:
   # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'masa') ||
-      (github.event_name == 'schedule' && github.event.schedule == '30 14 * * *')
+      (github.event_name == 'schedule' && github.event.schedule == '30 13 * * *')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +100,7 @@ jobs:
   # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'kahf') ||
-      (github.event_name == 'schedule' && github.event.schedule == '30 8 * * 5')
+      (github.event_name == 'schedule' && github.event.schedule == '30 7 * * 5')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
