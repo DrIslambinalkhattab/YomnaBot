@@ -60,9 +60,10 @@ def send_document_bytes(data: bytes, filename: str, caption: str = ""):
     print(f"📄 PDF: {r.status_code} | {r.json().get('description','OK')}")
 
 def send_audio_bytes(data: bytes, filename: str, caption: str = ""):
-    files = {"audio": (filename, data, "audio/mpeg")}
+    # نبعته كـ document عشان تيليغرام يتعامل معاه صح
+    files = {"document": (filename, data, "audio/mpeg")}
     r = requests.post(
-        f"{BASE_URL}/sendAudio",
+        f"{BASE_URL}/sendDocument",
         data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
         files=files,
     )
