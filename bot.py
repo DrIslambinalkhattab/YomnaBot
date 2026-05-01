@@ -177,7 +177,7 @@ def task_sabah():
         f"🤍 <b>أحسن ما تبدأ به يومك</b>\n"
         f"<i>حافظ عليها تُكتب من الذاكرين</i>"
     )
-    send_photo_file("Zeikr/sabah.jpg", caption)
+    send_photo_file("Zeikr/al-azkar.pdf", caption)
 
 
 # ─────────────────────────────────────────────
@@ -192,7 +192,7 @@ def task_masa():
         f"🤍 <b>اختم يومك بذكر الله</b>\n"
         f"<i>حافظ عليها تُكتب من الذاكرين</i>"
     )
-    send_photo_file("Zeikr/masa.jpg", caption)
+    send_photo_file("Zeikr/al-azkar.pdf", caption)
 
 
 # ─────────────────────────────────────────────
