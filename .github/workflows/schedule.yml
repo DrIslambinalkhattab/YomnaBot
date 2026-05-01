@@ -2,14 +2,10 @@ name: YomnaBot 🤖
 
 on:
   schedule:
-    # 📖 PDF + MP3 — 5:30 ص القاهرة = 3:30 UTC
-    - cron: '30 3 * * *'
-    # 🌅 أذكار الصباح — 6:00 ص القاهرة = 4:00 UTC
-    - cron: '0 4 * * *'
-    # 🌆 أذكار المساء — 4:30 م القاهرة = 14:30 UTC
-    - cron: '30 14 * * *'
-    # 📖 سورة الكهف — الجمعة 10:30 ص القاهرة = 8:30 UTC
-    - cron: '30 8 * * 5'
+    - cron: '30 3 * * *'   # 📖 PDF + MP3    — 5:30 ص القاهرة
+    - cron: '0 4 * * *'    # 🌅 أذكار الصباح — 6:00 ص القاهرة
+    - cron: '30 14 * * *'  # 🌆 أذكار المساء — 4:30 م القاهرة
+    - cron: '30 8 * * 5'   # 📖 سورة الكهف  — جمعة 10:30 ص القاهرة
 
   workflow_dispatch:
     inputs:
@@ -25,8 +21,13 @@ on:
           - kahf
 
 jobs:
+
+  # ────────────────────────────────────────────
   daily-files:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'daily_files' || github.event_name == 'schedule' && github.event.schedule == '30 3 * * *'
+  # ────────────────────────────────────────────
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'daily_files') ||
+      (github.event_name == 'schedule' && github.event.schedule == '30 3 * * *')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -40,22 +41,26 @@ jobs:
       - run: pip install -r requirements.txt
       - name: 🤖 Run bot
         env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          TOPIC_ID: ${{ secrets.TOPIC_ID }}
-          RELEASE_BASE: ${{ secrets.RELEASE_BASE }}
+          BOT_TOKEN:        ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:          ${{ secrets.CHAT_ID }}
+          TOPIC_ID:         ${{ secrets.TOPIC_ID }}
+          RELEASE_BASE:     ${{ secrets.RELEASE_BASE }}
           RELEASE_BASE_MP3: ${{ secrets.RELEASE_BASE_MP3 }}
         run: python bot.py daily_files
       - name: 💾 Save progress
         run: |
-          git config user.name "YomnaBot"
+          git config user.name  "YomnaBot"
           git config user.email "yomnabot@github.com"
           git add state.json
           git diff --staged --quiet || git commit -m "📊 تحديث التقدم: $(cat state.json)"
           git push
 
+  # ────────────────────────────────────────────
   sabah:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'sabah' || github.event_name == 'schedule' && github.event.schedule == '0 4 * * *'
+  # ────────────────────────────────────────────
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'sabah') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 4 * * *')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,12 +71,16 @@ jobs:
       - name: 🤖 Run bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          TOPIC_ID: ${{ secrets.TOPIC_ID }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
         run: python bot.py sabah
 
+  # ────────────────────────────────────────────
   masa:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'masa' || github.event_name == 'schedule' && github.event.schedule == '30 14 * * *'
+  # ────────────────────────────────────────────
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'masa') ||
+      (github.event_name == 'schedule' && github.event.schedule == '30 14 * * *')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,12 +91,16 @@ jobs:
       - name: 🤖 Run bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          TOPIC_ID: ${{ secrets.TOPIC_ID }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
         run: python bot.py masa
 
+  # ────────────────────────────────────────────
   kahf:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'kahf' || github.event_name == 'schedule' && github.event.schedule == '30 8 * * 5'
+  # ────────────────────────────────────────────
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'kahf') ||
+      (github.event_name == 'schedule' && github.event.schedule == '30 8 * * 5')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +110,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: 🤖 Run bot
         env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          TOPIC_ID: ${{ secrets.TOPIC_ID }}
+          BOT_TOKEN:    ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:      ${{ secrets.CHAT_ID }}
+          TOPIC_ID:     ${{ secrets.TOPIC_ID }}
+          RELEASE_KAHF: ${{ secrets.RELEASE_KAHF }}
         run: python bot.py kahf
