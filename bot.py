@@ -142,10 +142,6 @@ def task_masa():
 
 def task_friday_kahf():
     """الجمعة 10:30 ص — سورة الكهف"""
-    now = datetime.now(CAIRO_TZ)
-    if now.weekday() != 4:
-        print("⏭️ مش جمعة — تم التخطي")
-        return
     print("📖 إرسال رسالة سورة الكهف")
     send_text(
         "📖 <b>لا تنس الكهف</b> 🌟\n\n"
