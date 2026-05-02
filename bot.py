@@ -8,6 +8,7 @@ import sys
 import requests
 from datetime import datetime
 import pytz
+import random
 
 # ─────────────────────────────────────────────
 #  الإعدادات
@@ -60,23 +61,15 @@ def send_document_bytes(data: bytes, filename: str, caption: str = ""):
     print(f"📄 PDF: {r.status_code} | {r.json().get('description','OK')}")
 
 def send_audio_bytes(data: bytes, filename: str, caption: str = ""):
-    # نبعته كـ document عشان تيليغرام يتعامل معاه صح
-    files = {"document": (filename, data, "audio/mpeg")}
+    """بيبعت الصوت كـ voice note عشان يشتغل مباشرة"""
+    files = {"audio": (filename, data, "audio/mpeg")}
     r = requests.post(
-        f"{BASE_URL}/sendDocument",
-        data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
+        f"{BASE_URL}/sendAudio",
+        data={**_base_params(), "caption": caption, "parse_mode": "HTML",
+              "title": filename.replace(".mp3",""), "performer": "ختمة القرآن"},
         files=files,
     )
-    print(f"🎵 MP3: {r.status_code} | {r.json().get('description','OK')}")
-
-def send_photo_file(path: str, caption: str = ""):
-    with open(path, "rb") as photo:
-        r = requests.post(
-            f"{BASE_URL}/sendPhoto",
-            data={**_base_params(), "caption": caption, "parse_mode": "HTML"},
-            files={"photo": photo},
-        )
-    print(f"🖼️ صورة: {r.status_code}")
+    print(f"🎵 Audio: {r.status_code} | {r.json().get('description','OK')}")
 
 def download(url: str) -> bytes:
     print(f"⬇️  جاري التحميل: {url}")
@@ -85,26 +78,29 @@ def download(url: str) -> bytes:
         "User-Agent": "Mozilla/5.0",
     }
     r = requests.get(url, headers=headers, allow_redirects=True)
-    print(f"   ✅ {len(r.content) // 1024} KB | status: {r.status_code} | type: {r.headers.get('content-type','?')}")
+    print(f"   {'✅' if r.status_code==200 else '❌'} {len(r.content)//1024} KB | {r.status_code}")
     return r.content
 
 # ─────────────────────────────────────────────
-#  Progress bar — مزخرف
+#  Progress bar
 # ─────────────────────────────────────────────
 def progress_bar(current: int, total: int) -> str:
-    length   = 10
-    filled   = int((current / total) * length)
-    empty    = length - filled
-    pct      = round((current / total) * 100, 1)
-
-    # اخترنا رموز تليق بالمقام
-    bar = "🟩" * filled + "⬜" * empty
-
+    length  = 12
+    filled  = int((current / total) * length)
+    empty   = length - filled
+    pct     = round((current / total) * 100, 1)
+    bar     = "█" * filled + "░" * empty
     remaining = total - current
+
+    # نجوم التقدم
+    if pct < 25:   stars = "⭐"
+    elif pct < 50: stars = "⭐⭐"
+    elif pct < 75: stars = "⭐⭐⭐"
+    else:          stars = "⭐⭐⭐⭐"
+
     return (
-        f"<b>[{bar}]</b>  <b>{pct}%</b>\n"
-        f"📂 الملف: <b>{current}</b> من <b>{total}</b>  |  "
-        f"⏳ متبقي: <b>{remaining}</b> ملف"
+        f"<code>|{bar}|</code>  <b>{pct}%</b>  {stars}\n"
+        f"📂 <b>{current}</b> من <b>{total}</b>  •  ⏳ باقي <b>{remaining}</b>"
     )
 
 # ─────────────────────────────────────────────
@@ -112,17 +108,36 @@ def progress_bar(current: int, total: int) -> str:
 # ─────────────────────────────────────────────
 def motivational(pct: float) -> str:
     if pct < 10:
-        return "🌱 <i>البداية نور — بارك الله في خطواتكم</i>"
+        msgs = [
+            "🌱 <i>كل رحلة تبدأ بخطوة — بارك الله في بدايتكم</i>",
+            "🌱 <i>البداية نور، والنور يكبر مع كل يوم</i>",
+        ]
     elif pct < 25:
-        return "🌿 <i>ماشيين بثبات — الله يكتب لكم الأجر</i>"
+        msgs = [
+            "🌿 <i>ماشيين بثبات — والثبات أعظم من العجلة</i>",
+            "🌿 <i>خير العمل ما داوم عليه صاحبه وإن قلّ</i>",
+        ]
     elif pct < 50:
-        return "🌸 <i>في منتصف الطريق — ولا تهنوا ولا تحزنوا</i>"
+        msgs = [
+            "🌸 <i>ربع الطريق خلفنا — اللهم أعنّا على إتمامه</i>",
+            "🌸 <i>كل يوم خطوة — وكل خطوة في ميزان حسناتكم</i>",
+        ]
     elif pct < 75:
-        return "🌺 <i>أكثر من النص — الله يتمم علينا بخير</i>"
+        msgs = [
+            "🌺 <i>أكثر من النصف — وما أجمل أن يُتم المؤمن ما بدأ</i>",
+            "🌺 <i>في منتصف الطريق والهمم عالية — بارك الله فيكم</i>",
+        ]
     elif pct < 90:
-        return "🌟 <i>قاربنا — اللهم بلّغنا الختم</i>"
+        msgs = [
+            "🌟 <i>قاربنا الختم — اللهم بلّغنا وتقبّل منا</i>",
+            "🌟 <i>الخواتيم بيد الله — اللهم اجعل خواتيمنا خيراً</i>",
+        ]
     else:
-        return "✨ <i>على وشك الختمة — اللهم تقبّل منا ومنكم</i>"
+        msgs = [
+            "✨ <i>على وشك الختمة — اللهم تقبّل منا ومنكم</i>",
+            "✨ <i>لحظات وتكتمل الختمة — فلا تفوّتوا هذا الشرف</i>",
+        ]
+    return random.choice(msgs)
 
 # ─────────────────────────────────────────────
 #  المهمة الأولى: PDF + MP3 كل يوم 5:30 ص
@@ -140,18 +155,19 @@ def task_daily_files():
 
     caption_pdf = (
         f"📖 <b>ختمة القرآن الكريم</b>\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
-        f"🗓 <i>{date_str}</i>\n\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"🗓 <i>{date_str}</i>   •   📂 الجزء <b>{num}</b>\n\n"
         f"{bar}\n\n"
         f"{motiv}\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
-        f"🤲 <i>اللهم اجعله في ميزان حسناتنا</i>"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"🤲 <i>اللهم اجعله في ميزان حسناتنا جميعاً</i>"
     )
 
     caption_mp3 = (
-        f"🎧 <b>استماع | الجزء {num}</b>\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
-        f"<i>«وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا»</i>"
+        f"🎧 <b>تلاوة الجزء {num}</b>\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"<i>«وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا»</i>\n"
+        f"<i>استمع وقلبك حاضر — الأجر مضاعف</i>"
     )
 
     pdf_url = f"{RELEASE_BASE}/{num}.pdf"
@@ -170,14 +186,24 @@ def task_daily_files():
 # ─────────────────────────────────────────────
 def task_sabah():
     print("🌅 إرسال أذكار الصباح")
-    caption = (
-        f"🌅 <b>أذكار الصباح</b>\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
-        f"<i>«يُسَبِّحُ لِلَّهِ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ»</i>\n\n"
-        f"🤍 <b>أحسن ما تبدأ به يومك</b>\n"
-        f"<i>حافظ عليها تُكتب من الذاكرين</i>"
+
+    # رسالة نصية تمهيدية
+    send_text(
+        "🌅 <b>أذكار الصباح</b>\n"
+        "━━━━━━━━━━━━━━━━\n\n"
+        "<i>«أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ»</i>\n\n"
+        "🤍 <b>ابدأ يومك بذكر الله</b>\n"
+        "<i>من حافظ على أذكار الصباح كان في حِفظ الله طوال يومه</i>"
     )
-    send_photo_file("Zeikr/al-azkar.pdf", caption_pdf)
+
+    # ملف الأذكار PDF
+    azkar_url = f"{RELEASE_BASE}/al-azkar.pdf"
+    caption = (
+        f"📋 <b>أذكار الصباح</b>\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"<i>اقرأها بتأمل — كل ذكر له أثر</i>"
+    )
+    send_document_bytes(download(azkar_url), "al-azkar.pdf", caption)
 
 
 # ─────────────────────────────────────────────
@@ -185,14 +211,22 @@ def task_sabah():
 # ─────────────────────────────────────────────
 def task_masa():
     print("🌆 إرسال أذكار المساء")
-    caption = (
-        f"🌆 <b>أذكار المساء</b>\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
-        f"<i>«وَسَبِّحْ بِحَمْدِ رَبِّكَ قَبْلَ غُرُوبِ الشَّمْسِ»</i>\n\n"
-        f"🤍 <b>اختم يومك بذكر الله</b>\n"
-        f"<i>حافظ عليها تُكتب من الذاكرين</i>"
+
+    send_text(
+        "🌆 <b>أذكار المساء</b>\n"
+        "━━━━━━━━━━━━━━━━\n\n"
+        "<i>«أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ»</i>\n\n"
+        "🤍 <b>اختم نهارك بذكر الله</b>\n"
+        "<i>من حافظ على أذكار المساء كان في حِفظ الله طوال ليله</i>"
     )
-    send_photo_file("Zeikr/al-azkar.pdf", caption_pdf)
+
+    azkar_url = f"{RELEASE_BASE}/al-azkar.pdf"
+    caption = (
+        f"📋 <b>أذكار المساء</b>\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"<i>اقرأها بتأمل — كل ذكر له أثر</i>"
+    )
+    send_document_bytes(download(azkar_url), "al-azkar.pdf", caption)
 
 
 # ─────────────────────────────────────────────
@@ -201,47 +235,135 @@ def task_masa():
 def task_friday_kahf():
     print("📖 إرسال سورة الكهف")
 
-    # رسالة تمهيدية أولاً
-    intro = (
-        f"🕌 <b>يوم الجمعة المبارك</b>\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n\n"
-        f"📖 <b>لا تنسَ سورة الكهف</b>\n\n"
-        f"<i>«مَنْ قَرَأَ سُورَةَ الْكَهْفِ فِي يَوْمِ الْجُمُعَةِ،</i>\n"
-        f"<i>أَضَاءَ لَهُ مِنَ النُّورِ مَا بَيْنَ الْجُمُعَتَيْنِ»</i>\n\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
-        f"🤲 <i>تقبّل الله منا ومنكم</i> ✨"
+    send_text(
+        "🕌 <b>جمعة مباركة</b>\n"
+        "━━━━━━━━━━━━━━━━\n\n"
+        "📖 <b>لا تنسَ سورة الكهف اليوم</b>\n\n"
+        "<i>«مَنْ قَرَأَ سُورَةَ الْكَهْفِ فِي يَوْمِ الْجُمُعَةِ</i>\n"
+        "<i>أَضَاءَ لَهُ مِنَ النُّورِ مَا بَيْنَ الْجُمُعَتَيْنِ»</i>\n\n"
+        "━━━━━━━━━━━━━━━━\n"
+        "🤲 <i>تقبّل الله منا ومنكم صالح الأعمال</i>"
     )
-    send_text(intro)
 
-    # PDF سورة الكهف
     caption_pdf = (
         f"📗 <b>سورة الكهف</b>\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
-        f"<i>اقرأ واحتسب الأجر عند الله</i>"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"<i>اقرأ واحتسب — النور ينتظرك</i>"
     )
-
-    # MP3 سورة الكهف
     caption_mp3 = (
-        f"🎧 <b>استماع | سورة الكهف</b>\n"
-        f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"🎧 <b>تلاوة سورة الكهف</b>\n"
+        f"━━━━━━━━━━━━━━━━\n"
         f"<i>«وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا»</i>"
     )
 
-    pdf_url = f"{RELEASE_KAHF}/Al-Kahf.pdf"
-    mp3_url = f"{RELEASE_KAHF}/Al-Kahf.mp3"
+    pdf_url = f"{RELEASE_KAHF}/al-kahf.pdf"
+    mp3_url = f"{RELEASE_KAHF}/al-kahf.mp3"
 
     send_document_bytes(download(pdf_url), "al-kahf.pdf", caption_pdf)
     send_audio_bytes(download(mp3_url), "al-kahf.mp3", caption_mp3)
 
 
 # ─────────────────────────────────────────────
+#  التذكيرات اليومية
+# ─────────────────────────────────────────────
+def task_remind_morning():
+    """10 ص — تذكير بداية النهار"""
+    msgs = [
+        (
+            "☀️ <b>تذكير الضحى</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "📌 <b>مع التذكير بمهام اليوم:</b>\n\n"
+            "📖 ورد القرآن اليومي — <i>هل قرأت جزءك؟</i>\n"
+            "🤲 أذكار الصباح — <i>هل حصّنت نفسك؟</i>\n"
+            "📿 الأذكار المطلقة — <i>سبّح واستغفر في أي وقت</i>\n\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "<i>«وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا»</i>"
+        ),
+        (
+            "☀️ <b>صباح الخير والبركة</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "⏰ النهار في أوله والفرص متاحة!\n\n"
+            "📖 <i>ورد القرآن ينتظرك</i>\n"
+            "🌿 <i>الأذكار تُحصّن يومك</i>\n"
+            "💡 <i>دقائق مع الله تُصلح بقية يومك كله</i>\n\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "🤲 <i>اللهم أعنّا على ذكرك وشكرك وحسن عبادتك</i>"
+        ),
+    ]
+    send_text(random.choice(msgs))
+
+
+def task_remind_midday():
+    """2 ظ — تذكير منتصف النهار"""
+    msgs = [
+        (
+            "🌤 <b>وقفة منتصف النهار</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "النهار مضى نصفه — كيف حالك مع الله؟\n\n"
+            "📖 <i>لو ما قرأتش ورد القرآن — دلوقتي وقته</i>\n"
+            "🤲 <i>لو نسيت الأذكار — الله غفور رحيم، ابدأ من جديد</i>\n"
+            "📿 <i>سبحان الله وبحمده — مائة مرة تمحو الخطايا</i>\n\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "<i>«أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ»</i>"
+        ),
+        (
+            "🌤 <b>لحظة وسط الزحمة</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "وسط مشاغل الدنيا — لا تنس نصيبك من الله 🤍\n\n"
+            "💬 قل: <b>سبحان الله وبحمده سبحان الله العظيم</b>\n"
+            "<i>كلمتان خفيفتان على اللسان</i>\n"
+            "<i>ثقيلتان في الميزان</i>\n"
+            "<i>حبيبتان إلى الرحمن</i>\n\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "📖 <i>ورد القرآن لسه بينتظرك لو ما كملتش</i>"
+        ),
+    ]
+    send_text(random.choice(msgs))
+
+
+def task_remind_night():
+    """9 م — تذكير آخر النهار"""
+    msgs = [
+        (
+            "🌙 <b>محطة آخر النهار</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "قبل ما ينتهي يومك — حاسب نفسك بهدوء:\n\n"
+            "✅ <i>هل قرأت وردك اليوم؟</i>\n"
+            "✅ <i>هل قلت أذكار الصباح والمساء؟</i>\n"
+            "✅ <i>هل ذكرت الله في غيرها؟</i>\n\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "🌙 <b>أذكار النوم — لا تنم بدونها</b>\n"
+            "<i>آية الكرسي • الإخلاص • المعوذتان</i>\n"
+            "<i>«اللهم باسمك أموت وأحيا»</i>\n\n"
+            "🤲 <i>اللهم اجعل آخر كلامنا لا إله إلا الله</i>"
+        ),
+        (
+            "🌙 <b>الليل على الأبواب</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "المداومة هي السر 🌟\n\n"
+            "<i>«إن أحب الأعمال إلى الله</i>\n"
+            "<i>أدومها وإن قلّ»</i>\n\n"
+            "كل يوم بتلتزم فيه — هو انتصار 🏆\n"
+            "وكل تقصير — فرصة للتوبة والبداية من جديد\n\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "💤 <i>نامي على ذكر الله</i>\n"
+            "🤲 <i>اللهم تقبّل منا ومنكم</i>"
+        ),
+    ]
+    send_text(random.choice(msgs))
+
+
+# ─────────────────────────────────────────────
 #  نقطة الدخول
 # ─────────────────────────────────────────────
 TASKS = {
-    "daily_files" : task_daily_files,
-    "sabah"       : task_sabah,
-    "masa"        : task_masa,
-    "kahf"        : task_friday_kahf,
+    "daily_files"    : task_daily_files,
+    "sabah"          : task_sabah,
+    "masa"           : task_masa,
+    "kahf"           : task_friday_kahf,
+    "remind_morning" : task_remind_morning,
+    "remind_midday"  : task_remind_midday,
+    "remind_night"   : task_remind_night,
 }
 
 if __name__ == "__main__":
