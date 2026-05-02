@@ -174,27 +174,24 @@ def save_story_index(idx: int):
 def task_stories():
     """قصتين إسلاميتين — بدون تكرار — بالترتيب"""
     idx = load_story_index()
-    idx1 = idx % len(STORIES)
-    idx2 = (idx + 1) % len(STORIES)
+    story = STORIES[idx % len(STORIES)]
 
-    for i, story in enumerate([STORIES[idx1], STORIES[idx2]]):
-        num = "الأولى" if i == 0 else "الثانية"
-        msg = (
-            f"{story['icon']} <b>القصة {num}</b>\n"
-            f"━━━━━━━━━━━━━━━━\n\n"
-            f"<b>{story['title']}</b>\n\n"
-            f"{story['text']}\n\n"
-            f"┄┄┄┄┄┄┄┄┄┄┄┄\n"
-            f"💡 <b>العبرة:</b>\n"
-            f"<i>{story['lesson']}</i>\n"
-            f"━━━━━━━━━━━━━━━━\n"
-            f"🤲 <i>اللهم اجعلنا ممن يستمعون القول فيتبعون أحسنه</i>"
-        )
-        send_text(msg)
-        print(f"✅ تم إرسال القصة {num}")
+    msg = (
+        f"{story['icon']} <b>قصة الجمعة</b>\n"
+        f"━━━━━━━━━━━━━━━━\n\n"
+        f"<b>{story['title']}</b>\n\n"
+        f"{story['text']}\n\n"
+        f"┄┄┄┄┄┄┄┄┄┄┄┄\n"
+        f"💡 <b>العبرة:</b>\n"
+        f"<i>{story['lesson']}</i>\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"🤲 <i>اللهم اجعلنا ممن يستمعون القول فيتبعون أحسنه</i>"
+    )
+    send_text(msg)
+    print("✅ تم إرسال قصة الجمعة")
 
     # احفظ الموضع الجديد
-    save_story_index((idx + 2) % len(STORIES))
+    save_story_index((idx + 1) % len(STORIES))
 
 # ─────────────────────────────────────────────
 #  تذكير الصيام
