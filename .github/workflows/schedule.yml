@@ -2,10 +2,13 @@ name: YomnaBot 🤖
 
 on:
   schedule:
-    - cron: '30 2 * * *'   # 📖 PDF + MP3    — 5:30 ص القاهرة
-    - cron: '0 3 * * *'    # 🌅 أذكار الصباح — 6:00 ص القاهرة
-    - cron: '30 13 * * *'  # 🌆 أذكار المساء — 4:30 م القاهرة
-    - cron: '30 7 * * 5'   # 📖 سورة الكهف  — جمعة 10:30 ص القاهرة
+    - cron: '30 2 * * *'   # 📖 PDF + MP3       — 5:30 ص القاهرة (UTC+3)
+    - cron: '0 3 * * *'    # 🌅 أذكار الصباح    — 6:00 ص القاهرة
+    - cron: '30 13 * * *'  # 🌆 أذكار المساء    — 4:30 م القاهرة
+    - cron: '30 7 * * 5'   # 📖 سورة الكهف     — جمعة 10:30 ص
+    - cron: '0 7 * * *'    # ☀️ تذكير الضحى    — 10:00 ص القاهرة
+    - cron: '0 11 * * *'   # 🌤 تذكير الظهر    — 2:00 م القاهرة
+    - cron: '0 18 * * *'   # 🌙 تذكير الليل    — 9:00 م القاهرة
 
   workflow_dispatch:
     inputs:
@@ -19,12 +22,13 @@ on:
           - sabah
           - masa
           - kahf
+          - remind_morning
+          - remind_midday
+          - remind_night
 
 jobs:
 
-  # ────────────────────────────────────────────
   daily-files:
-  # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'daily_files') ||
       (github.event_name == 'schedule' && github.event.schedule == '30 2 * * *')
@@ -55,9 +59,7 @@ jobs:
           git diff --staged --quiet || git commit -m "📊 تحديث التقدم: $(cat state.json)"
           git push
 
-  # ────────────────────────────────────────────
   sabah:
-  # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'sabah') ||
       (github.event_name == 'schedule' && github.event.schedule == '0 3 * * *')
@@ -70,14 +72,13 @@ jobs:
       - run: pip install -r requirements.txt
       - name: 🤖 Run bot
         env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID:   ${{ secrets.CHAT_ID }}
-          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+          BOT_TOKEN:    ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:      ${{ secrets.CHAT_ID }}
+          TOPIC_ID:     ${{ secrets.TOPIC_ID }}
+          RELEASE_BASE: ${{ secrets.RELEASE_BASE }}
         run: python bot.py sabah
 
-  # ────────────────────────────────────────────
   masa:
-  # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'masa') ||
       (github.event_name == 'schedule' && github.event.schedule == '30 13 * * *')
@@ -90,14 +91,13 @@ jobs:
       - run: pip install -r requirements.txt
       - name: 🤖 Run bot
         env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID:   ${{ secrets.CHAT_ID }}
-          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+          BOT_TOKEN:    ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:      ${{ secrets.CHAT_ID }}
+          TOPIC_ID:     ${{ secrets.TOPIC_ID }}
+          RELEASE_BASE: ${{ secrets.RELEASE_BASE }}
         run: python bot.py masa
 
-  # ────────────────────────────────────────────
   kahf:
-  # ────────────────────────────────────────────
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'kahf') ||
       (github.event_name == 'schedule' && github.event.schedule == '30 7 * * 5')
@@ -115,3 +115,57 @@ jobs:
           TOPIC_ID:     ${{ secrets.TOPIC_ID }}
           RELEASE_KAHF: ${{ secrets.RELEASE_KAHF }}
         run: python bot.py kahf
+
+  remind-morning:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'remind_morning') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 7 * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python bot.py remind_morning
+
+  remind-midday:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'remind_midday') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 11 * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python bot.py remind_midday
+
+  remind-night:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'remind_night') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 18 * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python bot.py remind_night
