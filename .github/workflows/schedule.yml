@@ -9,6 +9,11 @@ on:
     - cron: '0 7 * * *'    # ☀️ تذكير الضحى    — 10:00 ص القاهرة
     - cron: '0 11 * * *'   # 🌤 تذكير الظهر    — 2:00 م القاهرة
     - cron: '0 18 * * *'   # 🌙 تذكير الليل    — 9:00 م القاهرة
+    - cron: '0 5 * * 5'    # 💛 صلاة على النبي — جمعة  8:00 ص
+    - cron: '0 7 * * 5'    # 💛 صلاة على النبي — جمعة 10:00 ص
+    - cron: '0 9 * * 5'    # 💛 صلاة على النبي — جمعة 12:00 م
+    - cron: '0 11 * * 5'   # 💛 صلاة على النبي — جمعة  2:00 م
+    - cron: '0 13 * * 5'   # 💛 صلاة على النبي — جمعة  4:00 م
 
   workflow_dispatch:
     inputs:
@@ -25,6 +30,7 @@ on:
           - remind_morning
           - remind_midday
           - remind_night
+          - friday_salah
 
 jobs:
 
@@ -75,7 +81,8 @@ jobs:
           BOT_TOKEN:    ${{ secrets.BOT_TOKEN }}
           CHAT_ID:      ${{ secrets.CHAT_ID }}
           TOPIC_ID:     ${{ secrets.TOPIC_ID }}
-          RELEASE_BASE: ${{ secrets.RELEASE_BASE }}
+          RELEASE_BASE:  ${{ secrets.RELEASE_BASE }}
+          RELEASE_AZKAR: ${{ secrets.RELEASE_AZKAR }}
         run: python bot.py sabah
 
   masa:
@@ -94,7 +101,8 @@ jobs:
           BOT_TOKEN:    ${{ secrets.BOT_TOKEN }}
           CHAT_ID:      ${{ secrets.CHAT_ID }}
           TOPIC_ID:     ${{ secrets.TOPIC_ID }}
-          RELEASE_BASE: ${{ secrets.RELEASE_BASE }}
+          RELEASE_BASE:  ${{ secrets.RELEASE_BASE }}
+          RELEASE_AZKAR: ${{ secrets.RELEASE_AZKAR }}
         run: python bot.py masa
 
   kahf:
@@ -169,3 +177,27 @@ jobs:
           CHAT_ID:   ${{ secrets.CHAT_ID }}
           TOPIC_ID:  ${{ secrets.TOPIC_ID }}
         run: python bot.py remind_night
+
+  friday-salah:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'friday_salah') ||
+      (github.event_name == 'schedule' && (
+        github.event.schedule == '0 5 * * 5' ||
+        github.event.schedule == '0 7 * * 5' ||
+        github.event.schedule == '0 9 * * 5' ||
+        github.event.schedule == '0 11 * * 5' ||
+        github.event.schedule == '0 13 * * 5'
+      ))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python bot.py friday_salah
