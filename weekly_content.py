@@ -151,13 +151,31 @@ STORIES = [
     },
 ]
 
+STATE_FILE = "state.json"
+
+def load_story_index() -> int:
+    import json, os
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("current_story", 0)
+    return 0
+
+def save_story_index(idx: int):
+    import json, os
+    state = {}
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            state = json.load(f)
+    state["current_story"] = idx
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+    print(f"💾 حُفظ التقدم في القصص: {idx}")
+
 def task_stories():
-    """قصتين إسلاميتين — الثلاثاء والجمعة"""
-    now = datetime.now(CAIRO_TZ)
-    # نختار قصتين مختلفتين حسب الأسبوع
-    week_num = now.isocalendar()[1]
-    idx1 = (week_num * 2) % len(STORIES)
-    idx2 = (week_num * 2 + 1) % len(STORIES)
+    """قصتين إسلاميتين — بدون تكرار — بالترتيب"""
+    idx = load_story_index()
+    idx1 = idx % len(STORIES)
+    idx2 = (idx + 1) % len(STORIES)
 
     for i, story in enumerate([STORIES[idx1], STORIES[idx2]]):
         num = "الأولى" if i == 0 else "الثانية"
@@ -174,6 +192,9 @@ def task_stories():
         )
         send_text(msg)
         print(f"✅ تم إرسال القصة {num}")
+
+    # احفظ الموضع الجديد
+    save_story_index((idx + 2) % len(STORIES))
 
 # ─────────────────────────────────────────────
 #  تذكير الصيام
