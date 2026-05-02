@@ -14,6 +14,12 @@ on:
     - cron: '0 9 * * 5'    # 💛 صلاة على النبي — جمعة 12:00 م
     - cron: '0 11 * * 5'   # 💛 صلاة على النبي — جمعة  2:00 م
     - cron: '0 13 * * 5'   # 💛 صلاة على النبي — جمعة  4:00 م
+    - cron: '0 5 * * *'    # 📖 آية اليوم      — 8:00 ص القاهرة
+    - cron: '30 5 * * *'   # 📜 حديث اليوم     — 8:30 ص القاهرة
+    - cron: '0 6 * * 2'    # 🌟 قصص إسلامية   — الثلاثاء 9:00 ص
+    - cron: '0 6 * * 5'    # 🌟 قصص إسلامية   — الجمعة 9:00 ص
+    - cron: '0 17 * * 0'   # 🌙 تذكير الاثنين  — الأحد 8:00 م
+    - cron: '0 17 * * 3'   # 🌙 تذكير الخميس   — الأربعاء 8:00 م
     # 📿 ذكر الساعة — كل ساعة من 7ص لـ 11م (UTC+3)
     - cron: '0 4 * * *'    # 📿 ذكر الساعة — 7:00 ص
     - cron: '0 5 * * *'    # 📿 ذكر الساعة — 8:00 ص
@@ -50,6 +56,11 @@ on:
           - remind_night
           - friday_salah
           - hourly_zikr
+          - ayah
+          - hadith
+          - stories
+          - fasting_monday
+          - fasting_thursday
 
 jobs:
 
@@ -256,3 +267,96 @@ jobs:
           CHAT_ID:   ${{ secrets.CHAT_ID }}
           TOPIC_ID:  ${{ secrets.TOPIC_ID }}
         run: python bot.py hourly_zikr
+
+  ayah:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'ayah') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 5 * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python daily_content.py ayah
+
+  hadith:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'hadith') ||
+      (github.event_name == 'schedule' && github.event.schedule == '30 5 * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python daily_content.py hadith
+
+  stories:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'stories') ||
+      (github.event_name == 'schedule' && (
+        github.event.schedule == '0 6 * * 2' ||
+        github.event.schedule == '0 6 * * 5'
+      ))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python weekly_content.py stories
+
+  fasting-monday:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'fasting_monday') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 17 * * 0')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python weekly_content.py fasting_monday
+
+  fasting-thursday:
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'fasting_thursday') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 17 * * 3')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: 🤖 Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID:   ${{ secrets.CHAT_ID }}
+          TOPIC_ID:  ${{ secrets.TOPIC_ID }}
+        run: python weekly_content.py fasting_thursday
