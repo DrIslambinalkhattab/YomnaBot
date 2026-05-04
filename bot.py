@@ -32,7 +32,7 @@ def load_state() -> dict:
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {"current_file": 1}
+    return {"current_file": 1, "current_story": 0}
 
 def save_state(state: dict):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
@@ -198,13 +198,13 @@ def task_sabah():
     )
 
     # ملف الأذكار PDF
-    azkar_url = f"{RELEASE_AZKAR}/al-azkar.pdf"
     caption = (
         f"📋 <b>أذكار الصباح</b>\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"<i>اقرأها بتأمل — كل ذكر له أثر</i>"
     )
-    send_document_bytes(download(azkar_url), "al-azkar.pdf", caption)
+    with open("Zeikr/al-azkar.pdf", "rb") as f:
+        send_document_bytes(f.read(), "al-azkar.pdf", caption)
 
 
 # ─────────────────────────────────────────────
@@ -221,13 +221,13 @@ def task_masa():
         "<i>من حافظ على أذكار المساء كان في حِفظ الله طوال ليله</i>"
     )
 
-    azkar_url = f"{RELEASE_AZKAR}/al-azkar.pdf"
     caption = (
         f"📋 <b>أذكار المساء</b>\n"
         f"━━━━━━━━━━━━━━━━\n"
         f"<i>اقرأها بتأمل — كل ذكر له أثر</i>"
     )
-    send_document_bytes(download(azkar_url), "al-azkar.pdf", caption)
+    with open("Zeikr/al-azkar.pdf", "rb") as f:
+        send_document_bytes(f.read(), "al-azkar.pdf", caption)
 
 
 # ─────────────────────────────────────────────
@@ -347,7 +347,7 @@ def task_remind_night():
             "كل يوم بتلتزم فيه — هو انتصار 🏆\n"
             "وكل تقصير — فرصة للتوبة والبداية من جديد\n\n"
             "━━━━━━━━━━━━━━━━\n"
-            "💤 <i>نامو على ذكر الله</i>\n"
+            "💤 <i>نامي على ذكر الله</i>\n"
             "🤲 <i>اللهم تقبّل منا ومنكم</i>"
         ),
     ]
